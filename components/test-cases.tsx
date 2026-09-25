@@ -7,6 +7,7 @@ import type { RunResult } from "@/lib/runner";
 import { detectEntrypoint, isFunctionSubmission } from "@/lib/submissions";
 import { executeCode } from "@/lib/client-run";
 import type { Language } from "@/lib/library";
+import { outputsEqual } from "@/lib/output";
 type TestCase = { id: string; name: string; kind: string; stdin: string; expected: string };
 type Result = RunResult & {
   algorithm: string;
@@ -37,7 +38,6 @@ const defaults: TestCase[] = [
     expected: "1 2 3 4 5 6",
   },
 ];
-const normalize = (s: string) => s.trim().replace(/\s+/g, " ");
 export default function TestCases({
   algorithms,
   initial,
@@ -118,7 +118,7 @@ export default function TestCases({
                 result.status !== "ok"
                   ? false
                   : c.expected.trim()
-                    ? normalize(c.expected) === normalize(result.stdout)
+                    ? outputsEqual(result.stdout, c.expected)
                     : null,
             },
           ]);
@@ -248,8 +248,9 @@ export default function TestCases({
             <summary>Submission settings · full program or LeetCode method</summary>
             <p>
               Auto mode accepts Solution methods in Java/Python, named JavaScript functions, and C
-              functions. Method inputs can be JSON arguments: [[2,7,11,15],9]. Python/Java also
-              support ListNode and TreeNode arrays. Select Program for your own stdin parser.
+              functions. Method inputs can be JSON arguments: [[2,7,11,15],9]. All four languages
+              support common ListNode and TreeNode signatures using arrays. Select Program for your
+              own stdin parser.
             </p>
             <label className="runner-timeout">
               Execution timeout (seconds)
@@ -308,10 +309,11 @@ export default function TestCases({
           <button
             onClick={() => {
               cancel.current = true;
-              setProgress("Stopping after this case");
+              controller.current?.abort();
+              setProgress("Cancelling execution");
             }}
           >
-            Stop after this case
+            Cancel execution
           </button>
         </div>
       )}

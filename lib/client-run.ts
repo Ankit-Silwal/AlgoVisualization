@@ -15,6 +15,7 @@ export async function executeCode(input: RunInput, signal?: AbortSignal): Promis
     void fetch(`/api/jobs/${queued.id}`, { method: "DELETE", keepalive: true });
   };
   signal?.addEventListener("abort", cancel, { once: true });
+  if (signal?.aborted) cancel();
   try {
     for (let i = 0; i < 360; i++) {
       if (signal?.aborted) throw new Error("Execution cancelled.");

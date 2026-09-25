@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Activity, Download, LoaderCircle, Play } from "lucide-react";
 import { Algorithm, CASES, Case, compact } from "@/lib/algorithms";
 import {
@@ -30,6 +30,8 @@ export default function Benchmarks({
     [progress, setProgress] = useState(""),
     [mode, setMode] = useState<Case | "all">("all");
   const stop = useRef(false);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
   const signature = JSON.stringify(
       algorithms.map((a) => ({ id: a.id, code: a.code, language: a.language })),
     ),
@@ -38,6 +40,7 @@ export default function Benchmarks({
     setBusy(true);
     setError("");
     stop.current = false;
+    controller.current = new AbortController();
     try {
       const ns = parseSizes(sizes);
       const state: BenchmarkState = {
@@ -61,14 +64,17 @@ export default function Benchmarks({
             const entrypoint = isFunctionSubmission({ ...a, stdin })
               ? detectEntrypoint(a.code, a.language)
               : undefined;
-            const result = await executeCode({
-              code: a.code,
-              language: a.language as Language,
-              stdin,
-              entrypoint,
-              repetitions: reps,
-              timeout: 2,
-            });
+            const result = await executeCode(
+              {
+                code: a.code,
+                language: a.language as Language,
+                stdin,
+                entrypoint,
+                repetitions: reps,
+                timeout: 2,
+              },
+              controller.current.signal,
+            );
             state.points.push({
               algorithmId: a.id,
               name: a.name,
@@ -209,9 +215,10 @@ export default function Benchmarks({
           <button
             onClick={() => {
               stop.current = true;
+              controller.current?.abort();
             }}
           >
-            Stop after this point
+            Cancel benchmark
           </button>
         </div>
       )}

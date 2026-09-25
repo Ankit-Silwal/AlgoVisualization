@@ -97,7 +97,8 @@ export async function runProgram(
           status: "tle",
           durationMs: job.timeout * 1000,
           stdout: "",
-          stderr: "Container job exceeded the 25-second overall limit (including compilation).",
+          stderr:
+            "Container job exceeded its overall deadline (including compilation and repetitions).",
         });
       },
       20000 + (job.repetitions || 1) * job.timeout * 1000,
