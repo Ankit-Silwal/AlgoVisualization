@@ -1,11 +1,13 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { wrapSubmission } from "./submissions";
 export const runSchema = z.object({
   language: z.enum(["JavaScript", "Python", "Java", "C"]),
   code: z.string().min(1).max(30000),
   stdin: z.string().max(200000),
   timeout: z.number().min(0.1).max(5).default(2),
+  mode: z.enum(["auto", "program", "function"]).optional(),
   entrypoint: z
     .string()
     .regex(/^[a-zA-Z_$][\w$]*$/)
@@ -20,10 +22,10 @@ export type RunResult = {
   stderr: string;
 };
 export function prepareCode(job: RunInput): string {
-  if (job.language !== "JavaScript" || !job.entrypoint) return job.code;
-  return `${job.code}\nconst __avInput = require('node:fs').readFileSync(0,'utf8').trim().split(/\\s+/).map(Number);\nconst __avN = __avInput[0] || 0;\nPromise.resolve(${job.entrypoint}(__avInput.slice(1, __avN+1), __avInput[__avN+1] ?? 0)).then(value => { console.log(Array.isArray(value) ? value.join(' ') : String(value)); });`;
+  return wrapSubmission(job);
 }
 export async function runProgram(job: RunInput): Promise<RunResult> {
+  const preparedCode = prepareCode(job);
   const name = `algovisual-${randomUUID()}`;
   const args = [
     "run",
@@ -125,6 +127,6 @@ export async function runProgram(job: RunInput): Promise<RunResult> {
         finish(new Error("The runner returned invalid output."));
       }
     });
-    child.stdin.end(JSON.stringify({ ...job, code: prepareCode(job) }));
+    child.stdin.end(JSON.stringify({ ...job, code: preparedCode }));
   });
 }

@@ -37,15 +37,20 @@ test("same-origin checks use the browser-facing Host rather than Next's bind add
     false,
   );
 });
-test("only explicit JavaScript entry points get an input adapter", () => {
+test("program mode bypasses adapters and method mode adapts JavaScript", () => {
   const base = {
     language: "JavaScript" as const,
     code: "function solve(a){return a}",
     stdin: "0",
     timeout: 2,
   };
-  assert.equal(prepareCode(base), base.code);
-  assert.match(prepareCode({ ...base, entrypoint: "solve" }), /Promise.resolve\(solve\(/);
-  const python = { ...base, language: "Python" as const, code: "print(1)", entrypoint: "solve" };
+  assert.equal(prepareCode({ ...base, mode: "program" }), base.code);
+  assert.match(prepareCode({ ...base, entrypoint: "solve" }), /Promise.resolve\(__fn\(/);
+  const python = {
+    ...base,
+    language: "Python" as const,
+    code: "print(1)",
+    mode: "program" as const,
+  };
   assert.equal(prepareCode(python), python.code);
 });

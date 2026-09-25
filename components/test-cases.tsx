@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { Check, ChevronDown, FlaskConical, LoaderCircle, Play, Plus, Trash2 } from "lucide-react";
 import { Algorithm } from "@/lib/algorithms";
 import type { RunResult } from "@/lib/runner";
+import { detectEntrypoint, isFunctionSubmission } from "@/lib/submissions";
 type TestCase = { id: string; name: string; kind: string; stdin: string; expected: string };
 type Result = RunResult & {
   algorithm: string;
@@ -43,6 +44,9 @@ export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
   const [timeout, setTimeoutValue] = useState(2);
   const [progress, setProgress] = useState("");
   const [entrypoints, setEntrypoints] = useState<Record<string, string>>({});
+  const [submissionModes, setSubmissionModes] = useState<
+    Record<string, "auto" | "program" | "function">
+  >({});
   const cancel = useRef(false);
   const active = cases.find((c) => c.id === selected) || cases[0];
   const update = (patch: Partial<TestCase>) =>
@@ -57,10 +61,9 @@ export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
         for (const c of cases) {
           if (cancel.current) break;
           setProgress(`${a.name} · ${c.name}`);
-          const detected =
-            a.language === "JavaScript" && !/\b(console\.|require\(|process\.)/.test(a.code)
-              ? a.code.match(/function\s+(\w+)\s*\(/)?.[1]
-              : undefined;
+          const detected = isFunctionSubmission({ ...a, stdin: c.stdin })
+            ? detectEntrypoint(a.code, a.language)
+            : undefined;
           const entrypoint =
             entrypoints[a.id] === undefined ? detected : entrypoints[a.id] || undefined;
           const r = await fetch("/api/run", {
@@ -72,6 +75,7 @@ export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
               stdin: c.stdin,
               timeout,
               entrypoint,
+              mode: submissionModes[a.id] || "auto",
             }),
           });
           const data = await r.json();
@@ -215,7 +219,12 @@ export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
             format. Labels do not automatically prove best/worst behavior.
           </p>
           <details>
-            <summary>Runner settings & JavaScript entry points</summary>
+            <summary>Submission settings · full program or LeetCode method</summary>
+            <p>
+              Auto mode accepts Solution methods in Java/Python, named JavaScript functions, and C
+              functions. Method inputs can be JSON arguments: [[2,7,11,15],9]. Python/Java also
+              support ListNode and TreeNode arrays. Select Program for your own stdin parser.
+            </p>
             <label className="runner-timeout">
               Execution timeout (seconds)
               <input
@@ -231,25 +240,38 @@ export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
                 }
               />
             </label>
-            {algorithms
-              .filter((a) => a.language === "JavaScript")
-              .map((a) => (
-                <label className="entrypoint-row" key={a.id}>
-                  {a.name}
-                  <input
-                    disabled={busy}
-                    placeholder="Auto-detect; blank for full program"
-                    aria-label={`${a.name} entry point`}
-                    value={
-                      entrypoints[a.id] ??
-                      (!/\b(console\.|require\(|process\.)/.test(a.code)
-                        ? a.code.match(/function\s+(\w+)\s*\(/)?.[1] || ""
-                        : "")
-                    }
-                    onChange={(e) => setEntrypoints({ ...entrypoints, [a.id]: e.target.value })}
-                  />
-                </label>
-              ))}
+            {algorithms.map((a) => (
+              <label className="entrypoint-row" key={a.id}>
+                {a.name}
+                <select
+                  aria-label={`${a.name} submission mode`}
+                  value={submissionModes[a.id] || "auto"}
+                  disabled={busy}
+                  onChange={(e) =>
+                    setSubmissionModes({
+                      ...submissionModes,
+                      [a.id]: e.target.value as "auto" | "program" | "function",
+                    })
+                  }
+                >
+                  <option value="auto">Auto</option>
+                  <option value="program">Program</option>
+                  <option value="function">Method</option>
+                </select>
+                <input
+                  disabled={busy}
+                  placeholder="Auto-detect entry point"
+                  aria-label={`${a.name} entry point`}
+                  value={
+                    entrypoints[a.id] ??
+                    (isFunctionSubmission({ ...a, stdin: "" })
+                      ? detectEntrypoint(a.code, a.language) || ""
+                      : "")
+                  }
+                  onChange={(e) => setEntrypoints({ ...entrypoints, [a.id]: e.target.value })}
+                />
+              </label>
+            ))}
           </details>
         </div>
       </div>
