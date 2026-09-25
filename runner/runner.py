@@ -4,6 +4,9 @@ import os
 import subprocess
 import sys
 import time
+import threading
+import signal
+import statistics
 
 def emit(value):
     print(json.dumps(value), flush=True)
@@ -25,11 +28,18 @@ def main():
     def invoke(cmd, stdin, timeout):
         with open('/work/out', 'w+') as out, open('/work/err', 'w+') as err:
             start = time.perf_counter()
-            try:
-                completed = subprocess.run(cmd, input=stdin, text=True, stdout=out, stderr=err, timeout=timeout)
-                status = 'ok' if completed.returncode == 0 else 'error'
-            except subprocess.TimeoutExpired:
-                status = 'tle'
+            process = subprocess.Popen(cmd, stdin=subprocess.PIPE, text=True, stdout=out, stderr=err, start_new_session=True)
+            expired = threading.Event()
+            def terminate():
+                expired.set()
+                try: os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError: pass
+            timer = threading.Timer(timeout, terminate)
+            timer.daemon = True
+            timer.start()
+            try: process.communicate(stdin)
+            finally: timer.cancel()
+            status = 'tle' if expired.is_set() else ('ok' if process.returncode == 0 else 'error')
             elapsed = (time.perf_counter() - start) * 1000
             out.seek(0); err.seek(0)
             return status, elapsed, out.read(16000), err.read(16000)
@@ -38,8 +48,14 @@ def main():
         if status != 'ok':
             emit({'status': 'compile_error', 'durationMs': 0, 'stdout': out, 'stderr': err or 'Compilation timed out.'})
             return
-    status, elapsed, out, err = invoke(run_cmd, job.get('stdin', ''), job.get('timeout', 2))
-    emit({'status': status, 'durationMs': elapsed, 'stdout': out, 'stderr': err})
+    samples = []
+    for _ in range(max(1, min(7, job.get('repetitions', 1)))):
+        status, elapsed, out, err = invoke(run_cmd, job.get('stdin', ''), job.get('timeout', 2))
+        if status != 'ok':
+            emit({'status': status, 'durationMs': elapsed, 'stdout': out, 'stderr': err, 'samplesMs': samples})
+            return
+        samples.append(elapsed)
+    emit({'status': 'ok', 'durationMs': statistics.median(samples), 'stdout': out, 'stderr': err, 'samplesMs': samples, 'minMs': min(samples), 'maxMs': max(samples)})
 
 try:
     main()

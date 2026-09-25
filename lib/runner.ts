@@ -8,6 +8,7 @@ export const runSchema = z.object({
   stdin: z.string().max(200000),
   timeout: z.number().min(0.1).max(5).default(2),
   mode: z.enum(["auto", "program", "function"]).optional(),
+  repetitions: z.number().int().min(1).max(7).optional(),
   entrypoint: z
     .string()
     .regex(/^[a-zA-Z_$][\w$]*$/)
@@ -20,6 +21,9 @@ export type RunResult = {
   durationMs: number;
   stdout: string;
   stderr: string;
+  samplesMs?: number[];
+  minMs?: number;
+  maxMs?: number;
 };
 export function prepareCode(job: RunInput): string {
   return wrapSubmission(job);
@@ -120,6 +124,9 @@ export async function runProgram(job: RunInput): Promise<RunResult> {
             durationMs: z.number().nonnegative().finite(),
             stdout: z.string().max(20000),
             stderr: z.string().max(20000),
+            samplesMs: z.array(z.number().nonnegative().finite()).max(7).optional(),
+            minMs: z.number().nonnegative().finite().optional(),
+            maxMs: z.number().nonnegative().finite().optional(),
           })
           .parse(JSON.parse(stdout));
         finish(undefined, data);

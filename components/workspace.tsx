@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import ComplexityChart from "./complexity-chart";
 import TestCases from "./test-cases";
+import Benchmarks from "./benchmarks";
+import type { BenchmarkState } from "@/lib/benchmark";
 import {
   Algorithm,
   Analysis,
@@ -81,6 +83,7 @@ export default function Workspace() {
   const [saveName, setSaveName] = useState("Sorting: small inputs, big differences");
   const [settings, setSettings] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [benchmark, setBenchmark] = useState<BenchmarkState>();
   const fileRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLElement>(null);
   const active = algorithms.find((a) => a.id === selected) || algorithms[0];
@@ -946,6 +949,7 @@ export default function Workspace() {
             )}
           </section>
           <TestCases algorithms={algorithms} />
+          <Benchmarks algorithms={algorithms} value={benchmark} onChange={setBenchmark} />
           <footer>
             <span>
               <Activity size={14} />

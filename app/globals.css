@@ -17,6 +17,75 @@
   --green: #279882;
   --shadow: 0 3px 16px #29264103;
 }
+.benchmark-panel {
+  margin: 24px 0;
+}
+.benchmark-controls {
+  display: flex;
+  gap: 16px;
+  padding: 0 23px 18px;
+}
+.benchmark-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+  color: #8f7b9f;
+}
+.benchmark-controls label:first-child {
+  flex: 1;
+}
+.benchmark-controls input {
+  width: 100%;
+}
+.benchmark-controls label:last-child {
+  max-width: 85px;
+}
+.benchmark-template {
+  margin: 0 23px 20px;
+  line-height: 1.8;
+}
+.benchmark-template textarea {
+  display: block;
+  width: 100%;
+  height: 80px;
+  margin: 10px 0;
+  font-family: monospace;
+  font-size: 11px;
+}
+.benchmark-empty {
+  padding: 32px 23px;
+  text-align: center;
+  color: #a598b0;
+  font-size: 12px;
+  background: #fcfafe;
+}
+.measured-chart-scroll {
+  overflow-x: auto;
+  padding: 8px 15px;
+}
+.measured-chart-scroll svg {
+  width: 100%;
+  min-width: 520px;
+}
+.benchmark-panel .status-caption {
+  max-width: 220px;
+  white-space: normal;
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .benchmark-controls {
+    flex-wrap: wrap;
+    padding: 0 16px 16px;
+    gap: 10px;
+  }
+  .benchmark-controls label:first-child {
+    min-width: 100%;
+  }
+  .benchmark-template {
+    margin: 0 16px 16px;
+  }
+}
 * {
   box-sizing: border-box;
 }
