@@ -1,3 +1,4 @@
+import { inspectCode } from "./static-analysis";
 export type Case = "best" | "average" | "worst";
 export type Complexity =
   "constant" | "log" | "linear" | "nlogn" | "quadratic" | "cubic" | "exponential";
@@ -274,21 +275,11 @@ export function analyzeCode(code: string, name: string, language: string): Analy
       notes: ["Exact match to a reviewed library implementation.", exact.explanation],
     };
   // Deliberately conservative: names alone never establish algorithmic complexity.
-  const stripped = code
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\/\/[^\n]*/g, "")
-    .replace(/#[^\n]*/g, "")
-    .replace(/(["'`])(?:\\.|(?!\1)[^\\])*?\1/g, '""');
-  const loopCount = (stripped.match(/\b(for|while)\s*\(?/g) || []).length;
-  const model: Complexity = loopCount > 1 ? "quadratic" : loopCount === 1 ? "linear" : "constant";
+  const inspection = inspectCode(code, language);
   const notes = [
     "Heuristic suggestion only. Arbitrary code cannot be reliably analyzed from syntax; review all three case models before using this estimate.",
-    loopCount > 1
-      ? "Multiple loops found. Quadratic growth is a placeholder: sequential loops may be linear, while nesting can be more expensive."
-      : loopCount === 1
-        ? "A loop was found. Linear growth assumes the loop visits n elements; halving, fixed bounds, or early exits change the model."
-        : "No explicit loops found. Constant growth is a placeholder; recursion, library calls, and comprehensions can have substantial hidden cost.",
-    "Input distributions, recursion, language performance, and hidden library costs are not inferred. No submitted code is executed.",
+    ...inspection.notes,
+    "Average-case distributions are not inferred. Validate with representative inputs and the measured benchmark; static patterns are not an asymptotic proof.",
   ];
   return {
     algorithm: {
@@ -297,10 +288,10 @@ export function analyzeCode(code: string, name: string, language: string): Analy
       code,
       language,
       color: COLORS[0],
-      model: all(model),
+      model: inspection.model,
       factors: { best: 1, average: 1, worst: 1 },
       overhead: 0,
-      space: "Not inferred",
+      space: inspection.space,
       origin: "heuristic",
       explanation: notes[1],
       conditions: {

@@ -28,9 +28,12 @@ export type RunResult = {
 export function prepareCode(job: RunInput): string {
   return wrapSubmission(job);
 }
-export async function runProgram(job: RunInput): Promise<RunResult> {
+export async function runProgram(
+  job: RunInput,
+  options: { id?: string; signal?: AbortSignal } = {},
+): Promise<RunResult> {
   const preparedCode = prepareCode(job);
-  const name = `algovisual-${randomUUID()}`;
+  const name = `algovisual-${options.id || randomUUID()}`;
   const args = [
     "run",
     "--rm",
@@ -62,6 +65,7 @@ export async function runProgram(job: RunInput): Promise<RunResult> {
     "/tmp:rw,noexec,nosuid,size=16m,mode=1777",
     "algovisual-runner:local",
   ];
+  if (process.env.RUNNER_RUNTIME) args.splice(1, 0, "--runtime", process.env.RUNNER_RUNTIME);
   return new Promise((resolve, reject) => {
     const child = spawn("docker", args, { windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
     let stdout = "",
@@ -75,19 +79,29 @@ export async function runProgram(job: RunInput): Promise<RunResult> {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      options.signal?.removeEventListener("abort", abort);
       if (error) reject(error);
       else resolve(result!);
     };
-    const timer = setTimeout(() => {
+    const abort = () => {
       child.kill();
       cleanup();
-      finish(undefined, {
-        status: "tle",
-        durationMs: job.timeout * 1000,
-        stdout: "",
-        stderr: "Container job exceeded the 25-second overall limit (including compilation).",
-      });
-    }, 25000);
+      finish(new Error("Execution cancelled."));
+    };
+    options.signal?.addEventListener("abort", abort, { once: true });
+    const timer = setTimeout(
+      () => {
+        child.kill();
+        cleanup();
+        finish(undefined, {
+          status: "tle",
+          durationMs: job.timeout * 1000,
+          stdout: "",
+          stderr: "Container job exceeded the 25-second overall limit (including compilation).",
+        });
+      },
+      20000 + (job.repetitions || 1) * job.timeout * 1000,
+    );
     child.on("error", () => {
       cleanup();
       finish(new Error("Docker is unavailable. Start Docker and build the runner image."));
@@ -135,5 +149,6 @@ export async function runProgram(job: RunInput): Promise<RunResult> {
       }
     });
     child.stdin.end(JSON.stringify({ ...job, code: preparedCode }));
+    if (options.signal?.aborted) abort();
   });
 }

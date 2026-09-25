@@ -1,9 +1,12 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { TestState } from "@/lib/experiment-state";
 import { Check, ChevronDown, FlaskConical, LoaderCircle, Play, Plus, Trash2 } from "lucide-react";
 import { Algorithm } from "@/lib/algorithms";
 import type { RunResult } from "@/lib/runner";
 import { detectEntrypoint, isFunctionSubmission } from "@/lib/submissions";
+import { executeCode } from "@/lib/client-run";
+import type { Language } from "@/lib/library";
 type TestCase = { id: string; name: string; kind: string; stdin: string; expected: string };
 type Result = RunResult & {
   algorithm: string;
@@ -35,18 +38,41 @@ const defaults: TestCase[] = [
   },
 ];
 const normalize = (s: string) => s.trim().replace(/\s+/g, " ");
-export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
-  const [cases, setCases] = useState<TestCase[]>(defaults);
+export default function TestCases({
+  algorithms,
+  initial,
+  onChange,
+}: {
+  algorithms: Algorithm[];
+  initial?: TestState;
+  onChange: (value: TestState) => void;
+}) {
+  const [cases, setCases] = useState<TestCase[]>(initial?.cases || defaults);
   const [selected, setSelected] = useState("average");
-  const [results, setResults] = useState<Result[]>([]);
+  const [results, setResults] = useState<Result[]>(initial?.results || []);
+  const [resultSignature, setResultSignature] = useState(initial?.signature || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [timeout, setTimeoutValue] = useState(2);
+  const [timeout, setTimeoutValue] = useState(initial?.timeout || 2);
   const [progress, setProgress] = useState("");
-  const [entrypoints, setEntrypoints] = useState<Record<string, string>>({});
+  const [entrypoints, setEntrypoints] = useState<Record<string, string>>(
+    initial?.entrypoints || {},
+  );
   const [submissionModes, setSubmissionModes] = useState<
     Record<string, "auto" | "program" | "function">
-  >({});
+  >(initial?.submissionModes || {});
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  useEffect(() => {
+    onChange({
+      cases: cases as TestState["cases"],
+      results,
+      timeout,
+      entrypoints,
+      submissionModes,
+      signature: resultSignature,
+    });
+  }, [cases, results, timeout, entrypoints, submissionModes, resultSignature, onChange]);
   const cancel = useRef(false);
   const active = cases.find((c) => c.id === selected) || cases[0];
   const update = (patch: Partial<TestCase>) =>
@@ -55,6 +81,10 @@ export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
     setBusy(true);
     setError("");
     setResults([]);
+    controller.current = new AbortController();
+    setResultSignature(
+      JSON.stringify(algorithms.map((a) => ({ id: a.id, code: a.code, language: a.language }))),
+    );
     cancel.current = false;
     try {
       for (const a of algorithms) {
@@ -66,21 +96,17 @@ export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
             : undefined;
           const entrypoint =
             entrypoints[a.id] === undefined ? detected : entrypoints[a.id] || undefined;
-          const r = await fetch("/api/run", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              language: a.language,
+          const result = await executeCode(
+            {
+              language: a.language as Language,
               code: a.code,
               stdin: c.stdin,
               timeout,
               entrypoint,
               mode: submissionModes[a.id] || "auto",
-            }),
-          });
-          const data = await r.json();
-          if (!r.ok) throw new Error(data.error);
-          const result = data as RunResult;
+            },
+            controller.current.signal,
+          );
           setResults((list) => [
             ...list,
             {
@@ -296,6 +322,15 @@ export default function TestCases({ algorithms }: { algorithms: Algorithm[] }) {
       )}
       {results.length > 0 && (
         <div className="run-results">
+          {resultSignature !==
+            JSON.stringify(
+              algorithms.map((a) => ({ id: a.id, code: a.code, language: a.language })),
+            ) && (
+            <div className="analysis-notes">
+              Source code changed since these results. Run the cases again to measure the updated
+              programs.
+            </div>
+          )}
           <h3>
             Execution results <span className="soft-tag">MEASURED</span>
           </h3>

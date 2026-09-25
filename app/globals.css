@@ -17,6 +17,15 @@
   --green: #279882;
   --shadow: 0 3px 16px #29264103;
 }
+.account-modal {
+  max-width: 450px;
+}
+.account-modal .field-label {
+  margin-top: 18px;
+}
+.account-modal .modal-actions {
+  justify-content: space-between;
+}
 .benchmark-panel {
   margin: 24px 0;
 }

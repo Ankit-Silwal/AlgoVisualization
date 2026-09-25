@@ -17,7 +17,8 @@
     "test:integration": "tsx tests/integration.ts",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "worker": "tsx scripts/worker.ts"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",

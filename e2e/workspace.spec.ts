@@ -1,4 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { signIn } from "./helpers";
+test.beforeEach(async ({ page }) => {
+  await signIn(page);
+});
 test("comparison responds to cases, input and model edits", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "See beyond Big O." })).toBeVisible();

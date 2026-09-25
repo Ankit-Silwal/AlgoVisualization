@@ -1,0 +1,16 @@
+CREATE TABLE "User" ("id" UUID NOT NULL,"email" VARCHAR(254) NOT NULL,"passwordHash" TEXT NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "User_pkey" PRIMARY KEY("id"));
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE TABLE "Session" ("tokenHash" TEXT NOT NULL,"userId" UUID NOT NULL,"expiresAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "Session_pkey" PRIMARY KEY("tokenHash"));
+CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+CREATE INDEX "Session_expiresAt_idx" ON "Session"("expiresAt");
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY("userId") REFERENCES "User"("id") ON DELETE CASCADE;
+ALTER TABLE "experiments" ADD COLUMN "userId" UUID;
+ALTER TABLE "experiments" ADD CONSTRAINT "experiments_userId_fkey" FOREIGN KEY("userId") REFERENCES "User"("id") ON DELETE CASCADE;
+CREATE INDEX "experiments_userId_created_at_idx" ON "experiments"("userId","created_at");
+CREATE TABLE "RateLimit" ("key" TEXT NOT NULL,"count" INTEGER NOT NULL DEFAULT 1,"expiresAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "RateLimit_pkey" PRIMARY KEY("key"));
+CREATE INDEX "RateLimit_expiresAt_idx" ON "RateLimit"("expiresAt");
+CREATE TABLE "ExecutionJob" ("id" UUID NOT NULL,"userId" UUID NOT NULL,"status" TEXT NOT NULL DEFAULT 'QUEUED',"payload" JSONB NOT NULL,"result" JSONB,"error" TEXT,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"startedAt" TIMESTAMP(3),"finishedAt" TIMESTAMP(3),CONSTRAINT "ExecutionJob_pkey" PRIMARY KEY("id"));
+ALTER TABLE "ExecutionJob" ADD CONSTRAINT "ExecutionJob_userId_fkey" FOREIGN KEY("userId") REFERENCES "User"("id") ON DELETE CASCADE;
+CREATE INDEX "ExecutionJob_status_createdAt_idx" ON "ExecutionJob"("status","createdAt");
+CREATE INDEX "ExecutionJob_userId_createdAt_idx" ON "ExecutionJob"("userId","createdAt");
+CREATE TABLE "WorkerHeartbeat" ("id" TEXT NOT NULL,"seenAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "WorkerHeartbeat_pkey" PRIMARY KEY("id"));

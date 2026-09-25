@@ -34,6 +34,7 @@ jobs:
       - run: npm run runner:build
       - run: npm run test:integration
       - run: npx playwright install --with-deps chrome
+      - run: npm run worker > /tmp/algovisual-worker.log 2>&1 &
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()

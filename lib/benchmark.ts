@@ -9,7 +9,7 @@ export type BenchmarkPoint = {
   minMs: number;
   maxMs: number;
   samplesMs: number[];
-  status: string;
+  status: "ok" | "error" | "tle" | "compile_error";
 };
 export type BenchmarkState = {
   signature: string;

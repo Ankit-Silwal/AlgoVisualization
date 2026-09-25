@@ -1,4 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { signIn } from "./helpers";
+test.beforeEach(async ({ page }) => {
+  await signIn(page);
+});
 test("measured benchmark renders real samples and exports", async ({ page }) => {
   test.setTimeout(60000);
   await page.goto("/");

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { testStateSchema, benchmarkStateSchema } from "./experiment-state";
 const complexity = z.enum([
   "constant",
   "log",
@@ -42,5 +43,7 @@ export const experimentSchema = z.object({
   caseMode: z.enum(["best", "average", "worst", "all"]),
   rate: z.number().min(1).max(1e12),
   timeLimit: z.number().min(0.001).max(3600),
+  tests: testStateSchema.optional(),
+  benchmark: benchmarkStateSchema.optional(),
 });
 export type Experiment = z.infer<typeof experimentSchema>;

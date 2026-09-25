@@ -33,7 +33,9 @@ import {
 import ComplexityChart from "./complexity-chart";
 import TestCases from "./test-cases";
 import Benchmarks from "./benchmarks";
+import Account from "./account";
 import type { BenchmarkState } from "@/lib/benchmark";
+import type { TestState } from "@/lib/experiment-state";
 import {
   Algorithm,
   Analysis,
@@ -84,6 +86,8 @@ export default function Workspace() {
   const [settings, setSettings] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [benchmark, setBenchmark] = useState<BenchmarkState>();
+  const [testState, setTestState] = useState<TestState>();
+  const [loadKey, setLoadKey] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLElement>(null);
   const active = algorithms.find((a) => a.id === selected) || algorithms[0];
@@ -143,6 +147,8 @@ export default function Workspace() {
     caseMode: mode,
     rate,
     timeLimit,
+    tests: testState,
+    benchmark,
   });
   const load = (data: Experiment) => {
     setAlgorithms(data.algorithms);
@@ -152,6 +158,9 @@ export default function Workspace() {
     setRate(data.rate);
     setTimeLimit(data.timeLimit);
     setSaveName(data.name);
+    setTestState(data.tests);
+    setBenchmark(data.benchmark);
+    setLoadKey((k) => k + 1);
     setModal(null);
     setPlaying(false);
     setToast("Experiment loaded");
@@ -349,7 +358,7 @@ export default function Workspace() {
             <button className="icon-button" aria-label="Help" onClick={() => open("guide")}>
               <CircleHelp size={19} />
             </button>
-            <span className="avatar">A</span>
+            <Account />
           </div>
         </header>
         <main>
@@ -948,8 +957,18 @@ export default function Workspace() {
               </div>
             )}
           </section>
-          <TestCases algorithms={algorithms} />
-          <Benchmarks algorithms={algorithms} value={benchmark} onChange={setBenchmark} />
+          <TestCases
+            key={`tests-${loadKey}`}
+            algorithms={algorithms}
+            initial={testState}
+            onChange={setTestState}
+          />
+          <Benchmarks
+            key={`bench-${loadKey}`}
+            algorithms={algorithms}
+            value={benchmark}
+            onChange={setBenchmark}
+          />
           <footer>
             <span>
               <Activity size={14} />
@@ -1290,7 +1309,7 @@ export default function Workspace() {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     try {
-                      if (file.size > 250000) throw new Error("File too large");
+                      if (file.size > 5000000) throw new Error("File too large");
                       const data = experimentSchema.parse(JSON.parse(await file.text()));
                       load(data);
                     } catch {

@@ -10,6 +10,8 @@ import {
   parseSizes,
 } from "@/lib/benchmark";
 import { detectEntrypoint, isFunctionSubmission } from "@/lib/submissions";
+import { executeCode } from "@/lib/client-run";
+import type { Language } from "@/lib/library";
 export default function Benchmarks({
   algorithms,
   value,
@@ -19,10 +21,10 @@ export default function Benchmarks({
   value?: BenchmarkState;
   onChange: (v: BenchmarkState) => void;
 }) {
-  const [sizes, setSizes] = useState("100, 1000, 5000"),
-    [reps, setReps] = useState(3),
-    [template, setTemplate] = useState("{{n}}\n{{values}}\n{{target}}"),
-    [seed, setSeed] = useState(42),
+  const [sizes, setSizes] = useState(value?.sizes.join(", ") || "100, 1000, 5000"),
+    [reps, setReps] = useState(value?.repetitions || 3),
+    [template, setTemplate] = useState(value?.template || "{{n}}\n{{values}}\n{{target}}"),
+    [seed, setSeed] = useState(value?.seed ?? 42),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [progress, setProgress] = useState(""),
@@ -59,20 +61,14 @@ export default function Benchmarks({
             const entrypoint = isFunctionSubmission({ ...a, stdin })
               ? detectEntrypoint(a.code, a.language)
               : undefined;
-            const response = await fetch("/api/run", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                code: a.code,
-                language: a.language,
-                stdin,
-                entrypoint,
-                repetitions: reps,
-                timeout: 2,
-              }),
+            const result = await executeCode({
+              code: a.code,
+              language: a.language as Language,
+              stdin,
+              entrypoint,
+              repetitions: reps,
+              timeout: 2,
             });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error);
             state.points.push({
               algorithmId: a.id,
               name: a.name,

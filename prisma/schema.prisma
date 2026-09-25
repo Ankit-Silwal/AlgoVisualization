@@ -12,6 +12,56 @@ model Experiment {
   name      String   @db.VarChar(100)
   data      Json
   createdAt DateTime @default(now()) @map("created_at")
+  userId    String?  @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 
   @@map("experiments")
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  email String @unique @db.VarChar(254)
+  passwordHash String
+  createdAt DateTime @default(now())
+  sessions Session[]
+  experiments Experiment[]
+  jobs ExecutionJob[]
+}
+
+model Session {
+  tokenHash String @id
+  userId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model RateLimit {
+  key String @id
+  count Int @default(1)
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+
+model ExecutionJob {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status String @default("QUEUED")
+  payload Json
+  result Json?
+  error String?
+  createdAt DateTime @default(now())
+  startedAt DateTime?
+  finishedAt DateTime?
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model WorkerHeartbeat {
+  id String @id
+  seenAt DateTime @updatedAt
 }
