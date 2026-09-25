@@ -1,4 +1,5 @@
 import { Algorithm, PRESETS, COLORS, analyzeCode } from "./algorithms";
+import { EXTRA_STRUCTURES } from "./structures-extra";
 export const LANGUAGES = ["JavaScript", "Python", "Java", "C"] as const;
 export type Language = (typeof LANGUAGES)[number];
 export function analyzeLibraryCode(code: string, name: string, language: string) {
@@ -60,6 +61,7 @@ export type Structure = {
   samples: Record<Language, string>;
 };
 export const STRUCTURES: Structure[] = [
+  ...EXTRA_STRUCTURES,
   {
     name: "Array",
     tag: "Linear",

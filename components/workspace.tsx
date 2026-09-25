@@ -34,6 +34,7 @@ import ComplexityChart from "./complexity-chart";
 import TestCases from "./test-cases";
 import Benchmarks from "./benchmarks";
 import Account from "./account";
+import StructureStudio from "./structure-studio";
 import type { BenchmarkState } from "@/lib/benchmark";
 import type { TestState } from "@/lib/experiment-state";
 import {
@@ -298,7 +299,7 @@ export default function Workspace() {
             }}
           >
             <Layers size={18} />
-            Data structures<span className="nav-count">10</span>
+            Data structures<span className="nav-count">{STRUCTURES.length}</span>
           </button>
           <button className="nav-item" onClick={showSaved}>
             <FolderOpen size={18} />
@@ -969,6 +970,7 @@ export default function Workspace() {
             value={benchmark}
             onChange={setBenchmark}
           />
+          <StructureStudio onAdd={add} />
           <footer>
             <span>
               <Activity size={14} />

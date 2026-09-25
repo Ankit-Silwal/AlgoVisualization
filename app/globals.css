@@ -17,6 +17,134 @@
   --green: #279882;
   --shadow: 0 3px 16px #29264103;
 }
+.structure-studio {
+  margin: 24px 0;
+}
+.structure-studio select {
+  font-size: 11px;
+  max-width: 190px;
+}
+.studio-intro {
+  padding: 0 23px 16px;
+}
+.studio-intro p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #857494;
+}
+.studio-intro p span {
+  color: #a394ae;
+}
+.studio-intro > div {
+  display: flex;
+  gap: 30px;
+  margin-top: 14px;
+}
+.studio-intro > div span {
+  font-size: 9px;
+  color: #a393af;
+}
+.studio-intro b {
+  display: block;
+  margin-top: 5px;
+  font: 11px monospace;
+  color: #887098;
+}
+.studio-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  padding: 16px 23px;
+  background: #fcfafe;
+  border-block: 1px solid #eee7f4;
+}
+.studio-controls label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  font-size: 9px;
+  gap: 7px;
+  color: #9e88ad;
+}
+.studio-controls input {
+  min-width: 0;
+  font-size: 11px;
+  padding: 8px;
+}
+.studio-controls > input {
+  width: 110px;
+}
+.studio-controls select {
+  padding: 8px;
+}
+.structure-canvas {
+  padding: 25px 20px;
+  overflow: auto;
+  max-height: 550px;
+}
+.structure-canvas svg {
+  width: 100%;
+  min-width: 650px;
+  display: block;
+}
+.studio-trace {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 23px;
+  background: #f5f0fb;
+  border-block: 1px solid #eee6f7;
+  font-size: 10px;
+  color: #947baa;
+}
+.studio-trace p {
+  flex: 1;
+  line-height: 1.8;
+}
+.studio-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 23px;
+  font-size: 9px;
+  color: #afa0b9;
+}
+.studio-footer > span {
+  flex: 1;
+}
+.studio-footer select {
+  font-size: 10px;
+  padding: 6px;
+}
+@media (max-width: 760px) {
+  .studio-controls {
+    flex-wrap: wrap;
+    padding: 14px;
+  }
+  .studio-controls label {
+    min-width: 65%;
+  }
+  .studio-intro {
+    padding: 0 16px 16px;
+  }
+  .studio-intro > div {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .studio-footer {
+    flex-wrap: wrap;
+    padding: 14px;
+  }
+  .studio-footer > span {
+    min-width: 100%;
+  }
+  .studio-trace {
+    padding: 14px;
+  }
+  .structure-studio .panel-heading {
+    flex-wrap: wrap;
+  }
+}
 .account-modal {
   max-width: 450px;
 }

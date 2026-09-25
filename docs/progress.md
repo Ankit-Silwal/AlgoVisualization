@@ -1,5 +1,9 @@
 # Implemented extensions
 
+## Data-structure explorer
+
+The 18-structure library includes arrays, matrices, singly/doubly linked lists, stack, queue, deque, circular queue, hash map/set, BST, heap, graph, trie, disjoint set, Fenwick tree, segment tree, and sparse table. Every entry has runnable JavaScript/Python/Java/C examples. The interactive explorer supports small editable inputs, operation traces, playback, range queries, heap operations, BST search, trie words, BFS, and component unions. Visual rebuilds are labeled separately from the data structure's theoretical operation cost. Library examples remain short teaching examples rather than arbitrary LeetCode problem harnesses.
+
 ## Submission adapters
 
 Auto / Program / Method modes accept complete stdin programs or common LeetCode-style methods. JSON input is an argument array, for example `[[2,7,11,15],9]`. Java and Python `Solution` methods support primitive arguments, arrays, and common list/tree node conventions. Python supports typing annotations and Java uses reflection to convert arguments. C supports scalar parameters, numeric arrays, length parameters, and `int*` returns with `returnSize`; custom structs require a full stdin wrapper. See `lib/submissions.ts` for supported conversions. JSON method outputs are compared as text with whitespace normalization.

@@ -18,7 +18,7 @@ test("accounts isolate experiments and queued execution", async ({ page, browser
     .getByRole("dialog")
     .getByRole("button", { name: "Save experiment", exact: true })
     .click();
-  await expect(page.getByRole("status")).toContainText("saved");
+  await expect(page.locator(".toast")).toContainText("saved");
   const list = await (await page.request.get("/api/experiments")).json();
   expect(list).toHaveLength(1);
   const queued = await page.request.post("/api/run", {

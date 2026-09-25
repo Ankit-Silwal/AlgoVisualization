@@ -62,14 +62,14 @@ test("PostgreSQL save/load and test case editing", async ({ page }) => {
     .getByRole("dialog")
     .getByRole("button", { name: "Save experiment", exact: true })
     .click();
-  await expect(page.getByRole("status")).toContainText("saved to PostgreSQL");
+  await expect(page.locator(".toast")).toContainText("saved to PostgreSQL");
   await page.getByRole("button", { name: "Saved experiments", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: /Browser verification/ })
     .first()
     .click();
-  await expect(page.getByRole("status")).toContainText("Experiment loaded");
+  await expect(page.locator(".toast")).toContainText("Experiment loaded");
   await page.getByRole("button", { name: "Add test case", exact: true }).click();
   await page.getByRole("textbox", { name: "Standard input", exact: true }).fill("3\n3 1 2");
   await page.getByRole("textbox", { name: "Expected output", exact: true }).fill("1 2 3");
