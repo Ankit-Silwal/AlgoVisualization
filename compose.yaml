@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: algo
+      POSTGRES_PASSWORD: algo_local_dev
+      POSTGRES_DB: algovisualization
+    ports:
+      - "127.0.0.1:5437:5432"
+    volumes:
+      - algo_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U algo -d algovisualization"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  algo_data:
