@@ -15,9 +15,13 @@
     "db:studio": "prisma studio",
     "runner:build": "docker build -t algovisual-runner:local ./runner",
     "test:integration": "tsx tests/integration.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
     "@prisma/client": "^6.19.2",
     "lucide-react": "^0.577.0",
     "next": "^16.2.0",
@@ -31,6 +35,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "dotenv": "^18.0.4",
+    "prettier": "^3.9.9",
     "prisma": "^6.19.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.0"

@@ -1,0 +1,42 @@
+name: Verify AlgoVisual
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://algo:ci_local_only@localhost:5437/algovisualization
+      RUNNER_ENABLED: "true"
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: algo
+          POSTGRES_PASSWORD: ci_local_only
+          POSTGRES_DB: algovisualization
+        ports: ["5437:5432"]
+        options: >-
+          --health-cmd "pg_isready -U algo -d algovisualization"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate
+      - run: npm test
+      - run: npm run build
+      - run: npm run runner:build
+      - run: npm run test:integration
+      - run: npx playwright install --with-deps chrome
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures
+          path: test-results/

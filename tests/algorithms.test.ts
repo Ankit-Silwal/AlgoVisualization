@@ -1,10 +1,88 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PRESETS, runtime, crossover, analyzeCode, operations } from "../lib/algorithms";
+import {
+  PRESETS,
+  runtime,
+  crossover,
+  analyzeCode,
+  operations,
+  maxInputWithinBudget,
+} from "../lib/algorithms";
 import { experimentSchema } from "../lib/schema";
-test("insertion wins on small inputs; merge wins after crossover", () => { const [i, m] = PRESETS; assert.ok(runtime(i, 10, "average", 1e8) < runtime(m, 10, "average", 1e8)); assert.ok(runtime(i, 10000, "average", 1e8) > runtime(m, 10000, "average", 1e8)); const point = crossover(i, m, "average", 1e8); assert.ok(point && point > 10 && point < 10000); });
-test("cases reflect input sensitivity", () => { const [i, , s] = PRESETS; assert.ok(runtime(i, 1000, "best", 1e8) < runtime(i, 1000, "average", 1e8)); assert.ok(runtime(i, 1000, "average", 1e8) < runtime(i, 1000, "worst", 1e8)); assert.equal(runtime(s, 1000, "best", 1e8), runtime(s, 1000, "worst", 1e8)); });
-test("one billion linear operations exceed a one second budget at 100M ops/sec", () => { assert.equal(runtime(PRESETS[3], 1e9, "worst", 1e8), 10000); });
-test("exponential extremes remain finite", () => { assert.ok(Number.isFinite(operations("exponential", 1e9))); assert.ok(Number.isFinite(runtime({ ...PRESETS[0], model: { best: "exponential", average: "exponential", worst: "exponential" } }, 1e9, "worst", 1))); });
-test("exact presets recognized, algorithm names alone not trusted", () => { assert.equal(analyzeCode(PRESETS[1].code, "test", "JavaScript").confidence, "preset"); const suspicious = analyzeCode("function mergeSort(a) { for (let x of a) {} }", "Merge sort", "JavaScript"); assert.equal(suspicious.confidence, "low"); assert.equal(suspicious.algorithm.model.worst, "linear"); });
-test("schema rejects unsafe or oversized experiment data", () => { const experiment = { name: "test", algorithms: [PRESETS[0]], n: 1000, caseMode: "all", rate: 1e8, timeLimit: 1 }; assert.ok(experimentSchema.safeParse(experiment).success); assert.equal(experimentSchema.safeParse({ ...experiment, n: 1e10 }).success, false); assert.equal(experimentSchema.safeParse({ ...experiment, algorithms: [{ ...PRESETS[0], color: "url(evil)" }] }).success, false); });
+import { analyzeLibraryCode, codeFor, LANGUAGES } from "../lib/library";
+test("insertion wins on small inputs; merge wins after crossover", () => {
+  const [i, m] = PRESETS;
+  assert.ok(runtime(i, 10, "average", 1e8) < runtime(m, 10, "average", 1e8));
+  assert.ok(runtime(i, 10000, "average", 1e8) > runtime(m, 10000, "average", 1e8));
+  const point = crossover(i, m, "average", 1e8);
+  assert.ok(point && point > 10 && point < 10000);
+});
+test("cases reflect input sensitivity", () => {
+  const [i, , s] = PRESETS;
+  assert.ok(runtime(i, 1000, "best", 1e8) < runtime(i, 1000, "average", 1e8));
+  assert.ok(runtime(i, 1000, "average", 1e8) < runtime(i, 1000, "worst", 1e8));
+  assert.equal(runtime(s, 1000, "best", 1e8), runtime(s, 1000, "worst", 1e8));
+});
+test("one billion linear operations exceed a one second budget at 100M ops/sec", () => {
+  assert.equal(runtime(PRESETS[3], 1e9, "worst", 1e8), 10000);
+});
+test("exponential extremes remain finite", () => {
+  assert.ok(Number.isFinite(operations("exponential", 1e9)));
+  assert.ok(
+    Number.isFinite(
+      runtime(
+        {
+          ...PRESETS[0],
+          model: { best: "exponential", average: "exponential", worst: "exponential" },
+        },
+        1e9,
+        "worst",
+        1,
+      ),
+    ),
+  );
+});
+test("exact presets recognized, algorithm names alone not trusted", () => {
+  assert.equal(analyzeCode(PRESETS[1].code, "test", "JavaScript").confidence, "preset");
+  const suspicious = analyzeCode(
+    "function mergeSort(a) { for (let x of a) {} }",
+    "Merge sort",
+    "JavaScript",
+  );
+  assert.equal(suspicious.confidence, "low");
+  assert.equal(suspicious.algorithm.model.worst, "linear");
+});
+test("schema rejects unsafe or oversized experiment data", () => {
+  const experiment = {
+    name: "test",
+    algorithms: [PRESETS[0]],
+    n: 1000,
+    caseMode: "all",
+    rate: 1e8,
+    timeLimit: 1,
+  };
+  assert.ok(experimentSchema.safeParse(experiment).success);
+  assert.equal(experimentSchema.safeParse({ ...experiment, n: 1e10 }).success, false);
+  assert.equal(
+    experimentSchema.safeParse({
+      ...experiment,
+      algorithms: [{ ...PRESETS[0], color: "url(evil)" }],
+    }).success,
+    false,
+  );
+});
+test("budget search finds the precise quadratic threshold", () => {
+  const a = { ...PRESETS[0], factors: { best: 1, average: 1, worst: 1 } };
+  assert.equal(maxInputWithinBudget(a, "worst", 1e8, 1), 10000);
+  assert.equal(maxInputWithinBudget(PRESETS[3], "worst", 1e8, 1), 1e8);
+  assert.equal(maxInputWithinBudget(PRESETS[4], "best", 1e8, 1), 1e9);
+  assert.equal(maxInputWithinBudget({ ...a, overhead: 1e9 }, "worst", 1, 1), 0);
+});
+test("reviewed examples are recognized in every supported language", () => {
+  for (const language of LANGUAGES)
+    for (const preset of PRESETS)
+      assert.equal(
+        analyzeLibraryCode(codeFor(preset, language), preset.name, language).confidence,
+        "preset",
+      );
+});
