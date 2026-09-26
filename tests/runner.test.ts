@@ -53,4 +53,5 @@ test("program mode bypasses adapters and method mode adapts JavaScript", () => {
     mode: "program" as const,
   };
   assert.equal(prepareCode(python), python.code);
+  assert.equal(prepareCode({ ...base, language: "C", code: "not valid C" }), "not valid C");
 });

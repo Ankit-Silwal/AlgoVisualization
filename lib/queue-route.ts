@@ -3,6 +3,7 @@ import { runSchema } from "./runner";
 import { currentUser, allowRate } from "./auth";
 import { db } from "./db";
 import { hasSameOrigin } from "./request-origin";
+import { readLimitedBody } from "./request-body";
 export async function POST(request: Request) {
   if (process.env.RUNNER_ENABLED !== "true")
     return NextResponse.json(
@@ -21,9 +22,8 @@ export async function POST(request: Request) {
         { error: "Sign in to run code. Your programs and results stay in your account." },
         { status: 401 },
       );
-    const raw = await request.text();
-    if (raw.length > 240000)
-      return NextResponse.json({ error: "Request too large." }, { status: 413 });
+    const raw = await readLimitedBody(request, 1000000);
+    if (raw === null) return NextResponse.json({ error: "Request too large." }, { status: 413 });
     const parsed = runSchema.safeParse(JSON.parse(raw));
     if (!parsed.success)
       return NextResponse.json(

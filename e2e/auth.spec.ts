@@ -40,6 +40,41 @@ test("accounts isolate experiments and queued execution", async ({ page, browser
   const result = (await (await page.request.get(`/api/jobs/${id}`)).json()).result;
   expect(result.stdout.trim()).toBe("42");
   expect(result.samplesMs).toHaveLength(3);
+  const longJob = await page.request.post("/api/run", {
+    data: { language: "Python", code: "while True: pass", stdin: "", timeout: 5 },
+  });
+  expect(longJob.status()).toBe(202);
+  const longId = (await longJob.json()).id;
+  await expect
+    .poll(async () => (await (await page.request.get(`/api/jobs/${longId}`)).json()).status)
+    .toBe("RUNNING");
+  expect((await other.request.delete(`/api/jobs/${longId}`)).status()).toBe(404);
+  expect((await page.request.delete(`/api/jobs/${longId}`)).ok()).toBeTruthy();
+  await expect
+    .poll(async () => (await (await page.request.get(`/api/jobs/${longId}`)).json()).status)
+    .toBe("CANCELLED");
+  const otherSession = await browser.newContext({ baseURL: "http://localhost:3000" });
+  expect(
+    (
+      await otherSession.request.post("/api/auth", {
+        data: { action: "login", email, password: "local-test-password-928!" },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  expect(
+    (
+      await page.request.post("/api/auth", {
+        data: {
+          action: "change-password",
+          email,
+          password: "local-test-password-928!",
+          newPassword: "replacement-password-928!",
+        },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  expect((await otherSession.request.get("/api/experiments")).status()).toBe(401);
+  await otherSession.close();
   const wrong = await page.request.post("/api/auth", {
     data: { action: "login", email, password: "a-wrong-password" },
   });

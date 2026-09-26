@@ -25,7 +25,8 @@ export function isFunctionSubmission(s: Submission): boolean {
   if (s.language === "Java")
     return !/static\s+void\s+main\s*\(/.test(s.code) && /class\s+Solution\b/.test(s.code);
   if (s.language === "Python") return /class\s+Solution\b/.test(s.code);
-  if (s.language === "C") return !/\bmain\s*\(/.test(s.code);
+  if (s.language === "C")
+    return !/\bmain\s*\(/.test(s.code) && !!detectEntrypoint(s.code, s.language);
   return (
     !/\b(console\.|require\(|process\.)/.test(s.code) && !!detectEntrypoint(s.code, s.language)
   );

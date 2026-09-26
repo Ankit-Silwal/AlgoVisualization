@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { experimentSchema } from "@/lib/schema";
 import { currentUser, allowRate } from "@/lib/auth";
 import { hasSameOrigin } from "@/lib/request-origin";
+import { readLimitedBody } from "@/lib/request-body";
 export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
@@ -33,8 +34,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
   let body: unknown;
   try {
-    const raw = await request.text();
-    if (raw.length > 5000000)
+    const raw = await readLimitedBody(request, 5000000);
+    if (raw === null)
       return NextResponse.json({ error: "Experiment is too large." }, { status: 413 });
     body = JSON.parse(raw);
   } catch {

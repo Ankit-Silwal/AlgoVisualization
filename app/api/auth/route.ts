@@ -14,6 +14,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { hasSameOrigin } from "@/lib/request-origin";
+import { readLimitedBody } from "@/lib/request-body";
 export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
@@ -34,9 +35,8 @@ export async function POST(request: Request) {
         { error: "Too many attempts. Try again in ten minutes." },
         { status: 429 },
       );
-    const text = await request.text();
-    if (text.length > 2000)
-      return NextResponse.json({ error: "Request too large." }, { status: 413 });
+    const text = await readLimitedBody(request, 2000);
+    if (text === null) return NextResponse.json({ error: "Request too large." }, { status: 413 });
     const parsed = z
       .object({
         action: z.enum(["register", "login", "change-password"]),
@@ -104,7 +104,9 @@ export async function POST(request: Request) {
       NextResponse.json({ user: { id: user.id, email: user.email } }),
       await startSession(user.id),
     );
-  } catch {
+  } catch (e) {
+    if (e instanceof SyntaxError)
+      return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
     return NextResponse.json(
       { error: "Could not complete authentication. Check database connectivity and try again." },
       { status: 503 },

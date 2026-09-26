@@ -14,7 +14,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "runner:build": "docker build -t algovisual-runner:local ./runner",
-    "test:integration": "tsx tests/integration.ts",
+    "test:integration": "tsx tests/integration.ts && tsx tests/submissions.ts",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

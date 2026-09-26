@@ -42,6 +42,11 @@ export async function DELETE(request: Request, { params }: Context) {
       where: { id, userId: user.id, status: { in: ["QUEUED", "RUNNING"] } },
       data: { status: "CANCELLED", finishedAt: new Date() },
     });
+    if (
+      !result.count &&
+      !(await db.executionJob.findFirst({ where: { id, userId: user.id }, select: { id: true } }))
+    )
+      return NextResponse.json({ error: "Job not found." }, { status: 404 });
     return NextResponse.json({ cancelled: result.count > 0 });
   } catch {
     return NextResponse.json({ error: "Could not cancel job." }, { status: 503 });

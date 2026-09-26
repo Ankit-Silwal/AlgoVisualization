@@ -78,7 +78,7 @@ async function main() {
   });
   assert.equal(readonly.status, "error");
   console.log("PASS runner root filesystem is read-only");
-  console.log("All 69 integration checks passed.");
+  console.log("All integration checks passed.");
 }
 main().catch((e) => {
   console.error(e);

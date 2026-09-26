@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { analyzeLibraryCode } from "@/lib/library";
+import { readLimitedBody } from "@/lib/request-body";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
-    const raw = await request.text();
-    if (raw.length > 40000)
+    const raw = await readLimitedBody(request, 120000);
+    if (raw === null)
       return NextResponse.json({ error: "Code must be under 30,000 characters." }, { status: 413 });
     const parsed = z
       .object({

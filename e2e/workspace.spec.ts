@@ -56,6 +56,12 @@ test("runs actual shared input cases through the HTTP runner", async ({ page }) 
 });
 test("PostgreSQL save/load and test case editing", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("button", { name: "Add test case", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Test case name", exact: true })
+    .fill("Saved custom input");
+  await page.getByRole("textbox", { name: "Standard input", exact: true }).fill("3\n3 1 2");
+  await page.getByRole("textbox", { name: "Expected output", exact: true }).fill("1 2 3");
   await page.getByRole("button", { name: "Save experiment", exact: true }).click();
   await page.getByLabel("Experiment name", { exact: true }).fill("Browser verification");
   await page
@@ -63,6 +69,7 @@ test("PostgreSQL save/load and test case editing", async ({ page }) => {
     .getByRole("button", { name: "Save experiment", exact: true })
     .click();
   await expect(page.locator(".toast")).toContainText("saved to PostgreSQL");
+  await page.reload();
   await page.getByRole("button", { name: "Saved experiments", exact: true }).click();
   await page
     .getByRole("dialog")
@@ -70,9 +77,13 @@ test("PostgreSQL save/load and test case editing", async ({ page }) => {
     .first()
     .click();
   await expect(page.locator(".toast")).toContainText("Experiment loaded");
-  await page.getByRole("button", { name: "Add test case", exact: true }).click();
-  await page.getByRole("textbox", { name: "Standard input", exact: true }).fill("3\n3 1 2");
-  await page.getByRole("textbox", { name: "Expected output", exact: true }).fill("1 2 3");
+  await page.getByRole("button", { name: /Saved custom input/ }).click();
+  await expect(page.getByRole("textbox", { name: "Standard input", exact: true })).toHaveValue(
+    "3\n3 1 2",
+  );
+  await expect(page.getByRole("textbox", { name: "Expected output", exact: true })).toHaveValue(
+    "1 2 3",
+  );
   await expect(page.getByRole("button", { name: "Run 4 cases", exact: true })).toBeVisible();
 });
 test("mobile remains usable without page overflow", async ({ page }) => {
