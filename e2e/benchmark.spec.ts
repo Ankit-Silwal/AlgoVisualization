@@ -3,6 +3,26 @@ import { signIn } from "./helpers";
 test.beforeEach(async ({ page }) => {
   await signIn(page);
 });
+test("benchmark honors the selected method entry point", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Remove Merge sort", exact: true }).click();
+  await page.getByRole("button", { name: "Remove Selection sort", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Insertion sort source code" })
+    .fill(
+      "function helper(){throw Error('wrong entry point');}\nfunction solve(nums){return nums;}",
+    );
+  await page.getByText(/Submission settings .*full program/).click();
+  await page.getByLabel("Insertion sort submission mode").selectOption("function");
+  await page.getByLabel("Insertion sort entry point").fill("solve");
+  await page.getByLabel("Benchmark input sizes").fill("10");
+  await page.getByLabel("Benchmark repetitions").selectOption("1");
+  const request = page.waitForRequest((r) => r.url().endsWith("/api/run") && r.method() === "POST");
+  await page.getByRole("button", { name: "Run benchmark", exact: true }).click();
+  expect((await request).postDataJSON()).toMatchObject({ mode: "function", entrypoint: "solve" });
+  await expect(page.locator(".benchmark-panel tbody tr")).toHaveCount(3, { timeout: 30000 });
+  await expect(page.locator(".benchmark-panel tbody")).not.toContainText("ERROR");
+});
 test("measured benchmark renders real samples and exports", async ({ page }) => {
   test.setTimeout(60000);
   await page.goto("/");

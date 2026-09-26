@@ -12,13 +12,16 @@ import {
 import { detectEntrypoint, isFunctionSubmission } from "@/lib/submissions";
 import { executeCode } from "@/lib/client-run";
 import type { Language } from "@/lib/library";
+import type { TestState } from "@/lib/experiment-state";
 export default function Benchmarks({
   algorithms,
   value,
+  submissionSettings,
   onChange,
 }: {
   algorithms: Algorithm[];
   value?: BenchmarkState;
+  submissionSettings?: Pick<TestState, "entrypoints" | "submissionModes">;
   onChange: (v: BenchmarkState) => void;
 }) {
   const [sizes, setSizes] = useState(value?.sizes.join(", ") || "100, 1000, 5000"),
@@ -33,7 +36,13 @@ export default function Benchmarks({
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   const signature = JSON.stringify(
-      algorithms.map((a) => ({ id: a.id, code: a.code, language: a.language })),
+      algorithms.map((a) => ({
+        id: a.id,
+        code: a.code,
+        language: a.language,
+        mode: submissionSettings?.submissionModes[a.id] || "auto",
+        entrypoint: submissionSettings?.entrypoints[a.id],
+      })),
     ),
     stale = value && value.signature !== signature;
   const run = async () => {
@@ -61,15 +70,19 @@ export default function Benchmarks({
             if (stop.current) break;
             setProgress(`${a.name} · ${c} · n=${n.toLocaleString()} (${++done}/${count})`);
             const stdin = generatedInput(n, c, seed, template);
-            const entrypoint = isFunctionSubmission({ ...a, stdin })
+            const submissionMode = submissionSettings?.submissionModes[a.id] || "auto";
+            const detected = isFunctionSubmission({ ...a, stdin, mode: submissionMode })
               ? detectEntrypoint(a.code, a.language)
               : undefined;
+            const explicit = submissionSettings?.entrypoints[a.id];
+            const entrypoint = explicit === undefined ? detected : explicit || undefined;
             const result = await executeCode(
               {
                 code: a.code,
                 language: a.language as Language,
                 stdin,
                 entrypoint,
+                mode: submissionMode,
                 repetitions: reps,
                 timeout: 2,
               },
@@ -207,6 +220,7 @@ export default function Benchmarks({
           use {"[{{json}},{{target}}]"}. For data-structure batch programs use the default array
           format.
         </p>
+        <p>Entry points and Program/Method modes use the Submission settings in the test panel.</p>
       </details>
       {busy && (
         <div className="run-progress">
@@ -229,8 +243,8 @@ export default function Benchmarks({
       )}
       {stale && (
         <div className="analysis-notes">
-          Code changed since this benchmark. Results below belong to the saved source snapshot;
-          rerun to measure the current code.
+          Code or submission settings changed since this benchmark. Results below belong to the
+          saved snapshot; rerun to measure the current code.
         </div>
       )}
       {points.length > 0 ? (

@@ -967,6 +967,7 @@ export default function Workspace() {
           <Benchmarks
             key={`bench-${loadKey}`}
             algorithms={algorithms}
+            submissionSettings={testState}
             value={benchmark}
             onChange={setBenchmark}
           />
