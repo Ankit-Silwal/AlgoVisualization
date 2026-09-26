@@ -1,0 +1,23 @@
+[Unit]
+Description=AlgoVisual isolated execution worker
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=algovisual-worker
+WorkingDirectory=/opt/algovisual
+Environment=NODE_ENV=production
+Environment=RUNNER_RUNTIME=runsc
+EnvironmentFile=/etc/algovisual/worker.env
+ExecStart=/usr/bin/npm run worker
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

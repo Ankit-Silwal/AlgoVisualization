@@ -1,12 +1,10 @@
 # AlgoVisual
 
-A DSA playground for comparing up to six programs, exploring **best, average, and worst cases**, and running the same test inputs against JavaScript, Python, Java, and C implementations.
+A DSA practice platform built with **Next.js, React, Node.js, PostgreSQL, and Prisma**. Compare up to six programs using best, average, and worst-case graphs, then run your own cases in **JavaScript, Python, Java, and C**.
 
-Built with **Next.js App Router, React, TypeScript, Node.js route handlers, Prisma ORM, and PostgreSQL**. Program execution uses a separate, resource-limited Docker container for each job.
+## Start locally
 
-## Quick start
-
-Requirements: Node.js 22.12+ (tested with Node 24), npm, Docker Desktop running Linux containers, and Git.
+Requires Node.js 22.12+ (tested on 24), npm, and Docker running Linux containers.
 
 ```sh
 npm ci
@@ -16,39 +14,41 @@ npm run db:migrate
 npm run runner:build
 ```
 
-On PowerShell, use `Copy-Item .env.example .env.local` instead of `cp`. Set `RUNNER_ENABLED=true` in `.env.local` after building the runner, then:
+On PowerShell, use `Copy-Item .env.example .env.local`. Preserve existing environment files. Set `RUNNER_ENABLED=true`, then start these in separate terminals:
 
 ```sh
+npm run worker
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000). The model graph works without a database or runner. Saving requires PostgreSQL; actual execution requires Docker and an enabled runner. Errors in these optional services appear in the UI without disabling comparisons. Never commit `.env.local` or real credentials.
+Open [localhost:3000](http://localhost:3000). Register to execute code and save private experiments. Graphs, the structure explorer, and JSON import/export work without signing in. PostgreSQL is required for accounts, saves, and the execution queue. No AI API key is required.
 
-For your own database, set `DATABASE_URL` to its PostgreSQL connection string and run `npm run db:migrate`. `.env.local` takes precedence over `.env` in both Next.js and Prisma CLI. No API key is required for the heuristic analyzer.
+For an existing database, set `DATABASE_URL` and run `npm run db:migrate`. `.env.local` takes precedence over `.env`. Never commit credentials.
 
-## What you can do
+## Features
 
-- Compare up to six algorithms; add library implementations or your own code.
-- Overlay best/average/worst curves or inspect any case independently.
-- Move `n` from 1 to 10⁹ with a logarithmic slider, numeric input, or animation.
-- Adjust growth functions, per-case cost factors, fixed overhead, operation rate, and time limit.
-- See estimated TLE, all three case times, space complexity, and the first pair's approximate crossover.
-- Explore insertion, selection, bubble, and merge sort; linear and binary search, in all four languages.
-- Browse ten common data structures with operation costs, caveats, and runnable demos in each language.
-- Enter up to eight stdin/expected-stdout test cases with best/average/worst/custom labels. Run the same cases against every program and compare measured bars, outputs, correctness, compiler errors, runtime errors, and timeouts.
-- Save/load comparison experiments in PostgreSQL via Prisma; export/import validated JSON for portability.
+- Compare six programs with independent best/average/worst models, conditions, space costs, and editable constants.
+- Slide, type, or animate input size from 1 to **10^9**. Overlay all cases or inspect one; choose linear/log runtime scales.
+- Configure operation rate and time limit; see estimated TLE, largest passing input, and the first pair's approximate crossover.
+- Use insertion, selection, bubble, or merge sort, linear search, or binary search in four languages. Paste custom source for a conservative complexity suggestion.
+- Explore **18 data structures** with editable inputs, operations, playback, and four-language examples: array, matrix, singly/doubly linked list, stack, queue, deque, circular queue, hash map/set, BST, heap, graph, trie, disjoint set, Fenwick tree, segment tree, and sparse table.
+- Enter eight shared cases with optional expectations and best/average/worst/custom labels. Compare measured time, correctness, compiler/runtime errors, and actual TLE. Cancel active runs.
+- Submit full programs or common LeetCode-style functions and Solution methods, including list/tree adapters.
+- Benchmark 1-8 sizes up to 20,000 with repeatable generators and 1/3/5/7 repetitions. Plot medians and min/max, inspect empirical trends, and export CSV.
+- Save/load source, models, test inputs/results, and benchmark snapshots in your account; export/import validated JSON.
+- Accounts, password changes with session revocation, quotas, and a durable PostgreSQL job queue with a separate worker.
 
-## Estimates versus measurements
+## Estimates and measurements
 
-The graph uses `time = (factor × growth(n) + overhead) / operationsPerSecond`. Defaults are illustrative, **not language-specific benchmarks**. A budget of 10⁸ operations is not an input size of 10⁸: a cost-1 quadratic model hits it at `n = 10⁴`. Constant costs change this threshold. Crossover search is approximate and scans `n = 1…10⁹`.
+Estimated time is `(factor * growth(n) + overhead) / operationsPerSecond`. Defaults illustrate constant-factor tradeoffs, not measured language benchmarks. A **10^8-operation budget** permits `n = 10^4` for a cost-1 quadratic model, not `n = 10^8`. A cost-1 linear model at `n = 10^9` exceeds that budget. Constants and overhead change the threshold.
 
-Automatic arbitrary-code complexity analysis is not reliable. The analyzer recognizes exact reviewed examples; otherwise it gives a low-confidence loop-based placeholder and explains its assumptions. Users can override every case. It does not infer input distributions or hidden library/recursive costs.
+Arbitrary source analysis is a low-confidence suggestion, never a proof. Review detected loop/recursion assumptions and override each case. Exact library implementations have reviewed models. A supplied case label does not establish an asymptotic best/worst case.
 
-Actual test execution reports process wall time, including interpreter/JVM startup but excluding compilation and container startup. Very short cases are noisy. Measurements are separate from model estimates and do not automatically calibrate curves. Case labels are user annotations: reversed input is not the worst case for every algorithm. Saved comparison experiments currently include code/models/settings, not unsaved test-case edits or run history.
+Measurements include interpreter/JVM startup, exclude compilation/container startup, and can be noisy. Empirical fits are observations; they do not silently recalibrate the estimate curves. Structure demos use fixed examples: adapt their stdin handling before benchmarking growth.
 
 ## Input conventions
 
-Library algorithms accept the same whitespace-separated input:
+Library algorithms read `n`, then `n` integers, then an optional target:
 
 ```text
 6
@@ -56,36 +56,34 @@ Library algorithms accept the same whitespace-separated input:
 4
 ```
 
-First `n`, then `n` integers, then an optional search target. Sorts print the sorted values. Searches print the zero-based index or `-1`. Binary search requires sorted input. The default expected outputs suit sorting; change them for searches.
+Sorts output sorted values; searches output a zero-based index or -1. Binary search requires sorted input. Change expectations when comparing different tasks.
 
-- **JavaScript:** named functions can use `(array, target)` and return a value or array. The runner settings expose the entry point. Leave it blank for a full Node.js stdin/stdout program. Arrow functions can be used by entering their variable name explicitly.
-- **Python:** submit a complete Python 3 program reading stdin and printing results.
-- **Java:** submit a complete program with `public class Main` and `public static void main(String[] args)`.
-- **C:** submit a complete C17 program with `main`, using stdin/stdout.
-- Data-structure demos use fixed sample values and are labeled as such; adapt them to read stdin before treating them as input-scaled programs.
+Method input is a JSON **array of arguments**, e.g. `[[2,7,11,15],9]`. Lists use value arrays; trees use level-order arrays with null gaps. Choose entry point and Auto/Program/Method under Submission settings. Full Java programs use class Main. Unsupported signatures need a full stdin/stdout wrapper. See [adapter contracts](docs/api.md).
 
-Expected output comparison ignores leading/trailing whitespace and normalizes whitespace runs. An empty expected output means “execute without judging.” Output display is limited to 16,000 characters per stream. Inputs are limited to 200,000 characters; C algorithm templates additionally cap `n` at 20,000.
+JSON expectations compare structurally and preserve spaces inside strings. Plain text normalizes whitespace. Blank expectations skip judging. Limits: 30,000 source characters, 200,000 stdin characters, 16,000 returned characters per output stream.
 
 ## Commands
 
-| Command                       | Purpose                                                       |
-| ----------------------------- | ------------------------------------------------------------- |
-| `npm run dev`                 | Development server                                            |
-| `npm run build` / `npm start` | Production build/server                                       |
-| `npm test`                    | Model, validation, and runner-contract tests                  |
-| `npm run typecheck`           | TypeScript checks                                             |
-| `npm run db:up`               | Local PostgreSQL on port 5437                                 |
-| `npm run db:migrate`          | Apply committed Prisma migrations                             |
-| `npm run db:generate`         | Regenerate Prisma Client                                      |
-| `npm run db:studio`           | Inspect the database                                          |
-| `npm run runner:build`        | Build the four-language runner image                          |
-| `npm run test:integration`    | Run Docker language/timeout and PostgreSQL integration checks |
+| Command                                     | Purpose                                       |
+| ------------------------------------------- | --------------------------------------------- |
+| `npm run dev`                               | Next.js development server                    |
+| `npm run worker`                            | Execution worker; needs PostgreSQL and Docker |
+| `npm run build` / `npm start`               | Production build / server                     |
+| `npm test` / `npm run typecheck`            | Unit tests / TypeScript                       |
+| `npm run test:integration`                  | Runner, language adapters, database checks    |
+| `npm run test:e2e`                          | Chrome browser flows; start worker first      |
+| `npm run db:up` / `npm run db:migrate`      | Start local DB / apply migrations             |
+| `npm run db:generate` / `npm run db:studio` | Generate Prisma / inspect data                |
+| `npm run runner:build`                      | Build execution image                         |
 
-## Project docs
+Install browser dependencies with `npx playwright install chrome`. GitHub Actions tests pushes to main.
 
-- [Architecture and data model](docs/architecture.md)
-- [API and execution contracts](docs/api.md)
-- [Deployment and security boundaries](docs/deployment.md)
-- [Contributor / Claude instructions](claude.md)
+## Documentation
 
-This is a local, shared workspace with no user authentication or ownership partitioning. The execution service is **not a hardened public code judge**. See deployment notes before internet exposure.
+- [Architecture and persistence](docs/architecture.md)
+- [API and adapter contracts](docs/api.md)
+- [Deployment and operations](docs/deployment.md)
+- [Feature coverage](docs/progress.md)
+- [Contributor instructions](claude.md)
+
+Production Docker/Compose, Caddy, and systemd examples are included. Public execution requires a dedicated Linux runner with gVisor; production workers refuse to start without it. Local Docker tests do not validate that production boundary.

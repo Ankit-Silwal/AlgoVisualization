@@ -2,46 +2,56 @@
 
 ## Application flow
 
-`app/page.tsx` renders the client workspace. React state controls compared algorithms, case mode, input size, operation rate, and time limit. Model calculations and the responsive SVG graph run locally for immediate slider feedback. Node.js API routes analyze code, persist experiments, and dispatch Docker execution.
-
 ```text
-Browser / Next.js UI
-  ├─ lib/algorithms.ts → estimates → SVG graph + comparison table
-  ├─ POST /api/analyze → conservative heuristic suggestion
-  ├─ GET/POST /api/experiments → Prisma → PostgreSQL
-  └─ POST /api/run → Node child_process → isolated Docker job
-       └─ Python orchestration → node / python3 / javac+java / gcc+binary
+Browser / Next.js workspace
+  |- local case models -> SVG estimates, thresholds, crossover
+  |- local structure state -> operation traces
+  |- POST /api/analyze -> conservative suggestions (no execution)
+  |- /api/auth + /api/experiments -> Prisma -> PostgreSQL
+  |- POST /api/run -> ExecutionJob -> poll /api/jobs/:id
+                                       ^
+Separate worker -> SKIP LOCKED claim -> isolated Docker job -> result
 ```
 
-## Files
+Slider calculations stay in React. Node.js routes validate requests and enforce authentication, ownership, and quotas. The web process does not launch submitted programs. The worker runs two containers concurrently, monitors cancellation, publishes heartbeats, and handles stale jobs. Use one dedicated runner host; multiple worker processes can share it. Cross-host container cleanup is not coordinated.
 
-| Location                          | Responsibility                                                                         |
-| --------------------------------- | -------------------------------------------------------------------------------------- |
-| `components/workspace.tsx`        | Comparison controls, library, editor, save/load, import/export                         |
-| `components/complexity-chart.tsx` | Logarithmic input axis, optional log time, case line styles, time-limit overlay, hover |
-| `components/test-cases.tsx`       | Shared stdin cases, expectations, run queue, measured results                          |
-| `lib/algorithms.ts`               | Types, reviewed models, growth functions, runtime formatting, crossover, analyzer      |
-| `lib/library.ts`                  | JavaScript/Python/Java/C examples and data-structure reference                         |
-| `lib/schema.ts`                   | Zod validation for portable experiments                                                |
-| `lib/db.ts`                       | Reused Prisma Client                                                                   |
-| `lib/runner.ts`                   | Input validation, function adaptation, Docker lifecycle and limits                     |
-| `runner/runner.py`                | Compilation, bounded output capture, execution timing and timeout                      |
-| `prisma/`                         | PostgreSQL schema and versioned migrations                                             |
+## Code map
+
+| Location                                               | Responsibility                                        |
+| ------------------------------------------------------ | ----------------------------------------------------- |
+| components/workspace.tsx                               | Comparison, editor, library, save/load, import/export |
+| components/complexity-chart.tsx                        | Responsive SVG estimates                              |
+| components/test-cases.tsx                              | Shared cases, expectations, results, cancellation     |
+| components/benchmarks.tsx                              | Repeated measurements, curves, CSV                    |
+| components/structure-studio.tsx, lib/structure-view.ts | Structure state, operations, layouts, playback        |
+| components/account.tsx, lib/auth.ts                    | Accounts, scrypt, cookies, quotas                     |
+| lib/algorithms.ts, lib/static-analysis.ts              | Models, crossover, budget search, static suggestions  |
+| lib/library.ts, lib/structures-extra.ts                | Four-language examples                                |
+| lib/schema.ts, lib/experiment-state.ts                 | Portable snapshot schemas                             |
+| lib/queue-route.ts, lib/client-run.ts                  | Job admission and polling                             |
+| lib/submissions.ts, lib/node-adapters.ts               | Method and node adapters                              |
+| lib/runner.ts, runner/runner.py                        | Docker lifecycle, compilation, timing                 |
+| scripts/worker.ts, prisma/                             | Worker and versioned database migrations              |
 
 ## Model semantics
 
-An algorithm carries independent `best`, `average`, and `worst` growth classes and cost factors. Supported growth functions are constant, logarithmic (base two), linear, linearithmic, quadratic, cubic, and exponential. Fixed overhead is added before dividing by the machine's configured operation rate. Default factors demonstrate why insertion sort can beat merge sort for small inputs; they are not measured calibrations.
+Each algorithm has independent best/average/worst growth classes and factors, plus fixed overhead. Classes: constant, logarithmic, linear, linearithmic, quadratic, cubic, exponential. Extreme exponential values saturate safely. The input axis is logarithmic; runtime supports linear/log scales. Coincident case curves overlap.
 
-The graph input axis is always logarithmic. Its domain grows in powers of ten, up to 10⁹. Time can be logarithmic or linear. Extreme exponential values saturate numerically; plots cap their vertical range at 10¹⁵ ms and clip curves, while tables show a human-readable upper range. Coincident case curves may overlap (selection sort is a deliberate example).
+In All cases mode, summary cards use average estimates and say so. The table marks each case separately. Crossover compares the first two programs. Defaults are illustrative, not calibrated timings.
 
-With “All cases” selected, the fastest card, crossover card, and summary status use the **average** case, explicitly labeled. The table always shows all cases and marks TLE independently in each cell. The first two algorithms determine the crossover card; all programs remain visible on the graph.
+Static analysis distinguishes some sequential/nested, fixed/log loops and recursive shapes. It masks comments/strings but is not a complete parser or complexity prover. Unknown code remains low confidence; hidden calls and input conditions need review.
+
+Measured benchmark points hold samples, median, min/max, and status. Empirical fits require five points and reject noise-dominated runs. Generated case distributions are not guaranteed best/worst cases for arbitrary code.
 
 ## Persistence
 
-`Experiment` has UUID `id`, `name`, JSONB `data`, and `createdAt`. Validated JSON contains algorithms, code, case growth models, factors, overhead, selected n/case, operation rate, and time limit. The API returns the latest 100 records. There are no automatic migrations on request: `prisma migrate deploy` applies versioned SQL at setup/deployment.
+- User: normalized unique email and salted scrypt password hash.
+- Session: hashed opaque token and seven-day expiry. Password changes revoke previous sessions.
+- Experiment: owner, name, JSONB snapshot, creation time. Snapshots include code/models/settings, test inputs/results/submission modes, and benchmark state. Legacy unowned records remain inaccessible to new accounts.
+- ExecutionJob: account, payload, status, result/error, timestamps. A completed runner job is SUCCEEDED even when the program result is TLE or compile_error.
+- WorkerHeartbeat: queue availability.
+- RateLimit: shared database-backed buckets.
 
-Test cases and execution results remain in the current browser component state. They are not included in comparison experiment exports yet. There is no authentication; all saved experiments belong to one shared workspace.
+Worker cleanup expires old sessions, buckets, heartbeats, and jobs after 24 hours. Saved snapshots preserve copied results. RUNNING jobs older than 120 seconds are failed and their named container removed on the runner host. Apply migrations explicitly with npm run db:migrate.
 
-## Extension points
-
-Add reviewed algorithms in `lib/algorithms.ts` and matching language templates in `lib/library.ts`; cover semantic claims with tests. Richer static analysis can replace `/api/analyze`, but must retain confidence/assumption labels and user overrides. Production execution should move behind an authenticated queue on dedicated isolated hosts, preserving the existing run request/result contract.
+Source changes mark measurements stale. Labels and expectations are user assertions. JSON import uses the same schema as database saves.

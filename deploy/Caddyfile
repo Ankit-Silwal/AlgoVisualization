@@ -1,0 +1,10 @@
+{$ALGO_DOMAIN} {
+    encode zstd gzip
+    request_body {
+        max_size 5MB
+    }
+    reverse_proxy 127.0.0.1:3000 {
+        header_up X-Forwarded-For {remote_host}
+    }
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}

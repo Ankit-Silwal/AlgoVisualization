@@ -6,7 +6,7 @@ The 18-structure library includes arrays, matrices, singly/doubly linked lists, 
 
 ## Submission adapters
 
-Auto / Program / Method modes accept complete stdin programs or common LeetCode-style methods. JSON input is an argument array, for example `[[2,7,11,15],9]`. Java and Python `Solution` methods support primitive arguments, arrays, and common list/tree node conventions. Python supports typing annotations and Java uses reflection to convert arguments. C supports scalar parameters, numeric arrays, length parameters, and `int*` returns with `returnSize`; custom structs require a full stdin wrapper. See `lib/submissions.ts` for supported conversions. JSON method outputs are compared as text with whitespace normalization.
+Auto / Program / Method modes accept complete stdin programs or common LeetCode-style methods. JSON input is an argument array, for example `[[2,7,11,15],9]`. All four languages support common list/tree node signatures; JavaScript, Java, and Python also accept Solution methods. Python supports typing annotations and Java uses reflection to convert arguments. C supports scalar parameters, numeric arrays, length parameters, and `int*` returns with `returnSize`; other custom structs require a full stdin wrapper. See [API contracts](api.md) for supported forms and limitations. JSON outputs compare structurally, preserving spaces inside strings; plain-text output normalizes whitespace.
 
 ## Measured growth
 

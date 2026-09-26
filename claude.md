@@ -2,37 +2,36 @@
 
 ## Product intent
 
-AlgoVisual teaches DSA through multi-program comparison. Preserve best, average, and worst cases equally. Keep theoretical estimates clearly separate from measured execution. Support JavaScript, Python, Java, and C. Use Next.js with Node.js API routes, PostgreSQL, and **Prisma ORM**; do not replace the requested stack.
+AlgoVisual teaches DSA with multi-program comparison. Preserve best, average, and worst cases equally. Keep theoretical estimates separate from measured execution. Support JavaScript, Python, Java, and C. Retain Next.js, Node.js routes, PostgreSQL, and Prisma ORM.
 
 ## Working agreements
 
-- Complete a coherent feature, verify it, then commit and push to GitHub `main`. The repository owner explicitly requested regular feature pushes. Avoid rewriting remote history.
-- Keep secrets in ignored `.env.local` or deployment environment variables. Update `.env.example` when settings change.
-- Update README and `docs/` with behavior/contract changes.
-- Preserve user edits; inspect `git status` before changing files.
-- Do not claim arbitrary code's complexity is known. Mark heuristics low-confidence and retain model overrides.
-- Treat case labels as user assertions, not verified asymptotic classifications.
-- Do not run submitted code with host eval, VM, shell interpolation, or an unrestricted subprocess. All execution belongs in the isolated runner. Do not add host mounts or network access to execution containers.
-- Data-structure complexity claims must name relevant assumptions (amortized, balanced, known node, key length).
-- Maintain responsive layouts, keyboard-accessible controls, readable empty/error states, and reduced-motion support.
+- Finish a coherent feature, verify it, then commit and push to origin main. The owner explicitly requested frequent feature pushes. Do not rewrite remote history.
+- Inspect git status and preserve user edits. Never commit credentials, dependencies, generated builds, or local environment files.
+- Keep .env.example, README, and docs synchronized with behavior.
+- Arbitrary source analysis remains a low-confidence suggestion with assumptions and editable models. Case labels are assertions, not proofs.
+- Submitted source executes only in isolated worker containers. Never use host eval, host shell interpolation, unrestricted subprocesses, mounts, or network access for user programs.
+- Enforce account ownership for saved experiments and jobs. Preserve session revocation and database-backed quotas.
+- Explain amortized/balanced/key-length assumptions for data-structure costs. Fixed-size examples must not masquerade as measured variable-size algorithms.
+- Preserve responsive layouts, accessible labels, useful error states, and reduced-motion behavior.
 
 ## Workflow
 
-1. Read README, `docs/architecture.md`, and relevant source.
-2. Use `npm ci`; copy `.env.example` to `.env.local` if no local configuration exists.
-3. Start PostgreSQL and apply committed migrations. Regenerate Prisma Client after schema changes.
-4. Implement and run `npm test`, `npm run typecheck`, `npm run build`.
-5. For runner/database changes, build the image and run `npm run test:integration`. Browser-check user flows affected by UI changes.
-6. Commit completed features and push to `origin main`. Never commit secrets, generated build output, or dependencies.
+1. Read README, docs/architecture.md, and relevant source.
+2. Run npm ci; copy .env.example only when local configuration is absent.
+3. Start PostgreSQL, apply committed migrations, and generate Prisma Client after schema edits.
+4. Run npm test, npm run typecheck, and npm run build for implementation changes.
+5. For runner/database changes run npm run runner:build and npm run test:integration. Start npm run worker before npm run test:e2e. Check affected UI flows.
+6. Commit verified features and push to main promptly.
 
-## Key commands and locations
+## Key locations
 
-- `npm run dev`: local server on port 3000.
-- `npm run db:up`, `npm run db:migrate`, `npm run runner:build`: optional services.
-- `lib/algorithms.ts`: case models, runtime estimates, crossover, analysis.
-- `lib/library.ts`: language examples and data structures.
-- `lib/schema.ts`, `prisma/schema.prisma`: API/persistence contracts.
-- `lib/runner.ts`, `runner/runner.py`: restricted execution.
-- `components/`: interactive workspace, graph, test cases.
+- lib/algorithms.ts and lib/static-analysis.ts: models, budget thresholds, crossover, suggestions.
+- lib/library.ts and lib/structures-extra.ts: four-language teaching examples.
+- components/structure-studio.tsx and lib/structure-view.ts: editable visualizations.
+- lib/schema.ts and lib/experiment-state.ts: full saved/exported state.
+- lib/auth.ts and prisma/schema.prisma: accounts, quotas, persistence.
+- lib/submissions.ts and lib/node-adapters.ts: method adapters.
+- lib/runner.ts, runner/runner.py, scripts/worker.ts: isolated queued execution.
 
-Current boundaries: local shared workspace, no auth/ownership; single-server concurrency; experiments save model/code/settings but not test-case edits. Public execution needs additional isolation and access control described in deployment docs.
+Production requires a dedicated Linux runner with gVisor; local tests use Docker. Do not describe local verification as proof of production isolation. Consult docs/deployment.md for host setup and docs/api.md for method-signature limitations.
